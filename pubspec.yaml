@@ -52,6 +52,13 @@ dependencies:
   number_picker_dialog: ^0.0.1
   shared_preferences: ^2.0.11
   url_launcher: ^6.1.8
+  firebase_storage: ^10.1.1
+  image_picker: ^0.8.4+4
+  file_picker: ^4.0.0
+  path_provider: ^2.0.5
+  flutter_downloader: ^1.6.2
+  
+  
   
  
 dev_dependencies:

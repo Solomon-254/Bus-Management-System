@@ -5,6 +5,7 @@ import 'package:bus_management_system/services/routes_database_service.dart';
 import 'package:bus_management_system/services/user_database_service.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:twilio_flutter/twilio_flutter.dart';
 
@@ -46,7 +47,7 @@ class _AddEventsPageState extends State<AddEventsPage> {
   TextEditingController companyInvolvedController = TextEditingController();
   TextEditingController personnelInvolvedController = TextEditingController();
   TextEditingController personnelContactController = TextEditingController();
-  String _selectedCountryCode;
+  String _selectedCountryCode = '+27';
 
   final List<String> suggestions = [];
 
@@ -393,6 +394,9 @@ class _AddEventsPageState extends State<AddEventsPage> {
                               }
                               return null;
                             },
+                            inputFormatters: <TextInputFormatter>[
+                              FilteringTextInputFormatter.digitsOnly
+                            ],
                             keyboardType: TextInputType.phone,
                             decoration: InputDecoration(
                               labelText: "Personnel Contact",
@@ -424,11 +428,10 @@ class _AddEventsPageState extends State<AddEventsPage> {
                           InkWell(
                             child: ElevatedButton(
                               onPressed: () async {
-                               
                                 if (_formKey.currentState.validate()) {
-                                   setState(() {
-                                  _isLoading = true;
-                                });
+                                  setState(() {
+                                    _isLoading = true;
+                                  });
                                   String busName = selectedBusName;
                                   String eventType = _eventType;
                                   DateTime eventDate = _dateTime;
@@ -442,7 +445,8 @@ class _AddEventsPageState extends State<AddEventsPage> {
                                   String personnelInvolved =
                                       personnelInvolvedController.text;
                                   String personnelContact =
-                                      personnelContactController.text;
+                                      _selectedCountryCode +
+                                          personnelContactController.text;
                                   String route = selectedRoute;
 
                                   await EventsDatabaseService()
@@ -465,53 +469,54 @@ class _AddEventsPageState extends State<AddEventsPage> {
 
                                   //SMS notification messages
                                   String smsMessage1 =
-                                      'Dear admin, bus $busName has been involved in an $eventType on $eventDate. \n Contact $companyInvolved to fix that ASAP. Ensure to Update the status of the event once the issue is resolved \n Algoa Bus Inc  ';
+                                      'Dear admin, bus $busName has been involved in an $eventType on $eventDate while on $route route. \n Contact $companyInvolved to fix that ASAP. Ensure to Update the status of the event once the issue is resolved \n Algoa Bus Inc  ';
                                   String smsMessage2 =
                                       'Dear admin, bus $busName is due $eventType on $eventDate. \n Contact $companyInvolved to fix that ASAP. Ensure to Update the status of the event once the issue is resolved \n Algoa Bus Inc  ';
                                   //email notification messages
-                                  String emailMessage1 =
-                                      'Dear admin, bus <>strong$busName</strong> is due $eventType on $eventDate. <br>Contact $companyInvolved to fix that ASAP. <br>Ensure to Update the status of the event once the issue is resolved. <br> Algoa Bus Inc ';
-
+                                   String emailMessage1 =
+                                      '<p>Dear admin, bus <strong>$busName</strong> has been invloved in an $eventType on $eventDate while on $route route. <br>Contact $companyInvolved to fix that ASAP. <br>Kindly Ensure to update the status of the event once the issue is resolved. <br>Algoa Bus Inc </p>';
                                   String emailMessage2 =
-                                      '<p>Dear admin, bus <strong>$busName</strong> has been invloved in an $eventType on $eventDate. <br>Contact $companyInvolved to fix that ASAP. <br>Kindly Ensure to update the status of the event once the issue is resolved. <br>Algoa Bus Inc </p>';
+                                      '<p>Dear admin, bus <strong>$busName</strong> is due $eventType on $eventDate. <br>Contact $companyInvolved to fix that ASAP. <br>Ensure to Update the status of the event once the issue is resolved. <br> Algoa Bus Inc </p>' ;
+
+                                 
                                   if (eventType == 'services') {
-                                    await sendSmsNotification(
-                                        //send sms
-                                        phoneNumber,
-                                        smsMessage2,
-                                        eventType,
-                                        companyInvolved,
-                                        eventDate,
-                                        busName);
+                                    // await sendSmsNotification(
+                                    //     //send sms
+                                    //     phoneNumber,
+                                    //     smsMessage2,
+                                    //     eventType,
+                                    //     companyInvolved,
+                                    //     eventDate,
+                                    //     busName);
                                     //send email notification using sendgrid api
-                                    await _sendEmail(
-                                        apiKey,
-                                        toEmail,
-                                        emailMessage2,
-                                        eventType,
-                                        companyInvolved,
-                                        eventDate,
-                                        busName);
+                                    // await _sendEmail(
+                                    //     apiKey,
+                                    //     toEmail,
+                                    //     emailMessage2,
+                                    //     eventType,
+                                    //     companyInvolved,
+                                    //     eventDate,
+                                    //     busName);
                                     await EventsDatabaseService()
                                         .addNotificationDataToFirestore(
-                                            smsMessage2, emailMessage2);
+                                             emailMessage2, smsMessage2);
                                   } else if (eventType == 'accidents') {
-                                    await sendSmsNotification(
-                                        phoneNumber,
-                                        smsMessage1,
-                                        eventType,
-                                        companyInvolved,
-                                        eventDate,
-                                        busName);
+                                    // await sendSmsNotification(
+                                    //     phoneNumber,
+                                    //     smsMessage1,
+                                    //     eventType,
+                                    //     companyInvolved,
+                                    //     eventDate,
+                                    //     busName);
                                     //send email for accidents
-                                    await _sendEmail(
-                                        apiKey,
-                                        toEmail,
-                                        emailMessage1,
-                                        eventType,
-                                        companyInvolved,
-                                        eventDate,
-                                        busName);
+                                    // await _sendEmail(
+                                    //     apiKey,
+                                    //     toEmail,
+                                    //     emailMessage1,
+                                    //     eventType,
+                                    //     companyInvolved,
+                                    //     eventDate,
+                                    //     busName);
                                     await EventsDatabaseService()
                                         .addNotificationDataToFirestore(
                                             emailMessage1, smsMessage1);
@@ -565,86 +570,88 @@ class _AddEventsPageState extends State<AddEventsPage> {
     );
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime picked = await showDatePicker(
-        context: context,
-        initialDate: _dateTime ?? DateTime.now(),
-        firstDate: DateTime.now(),
-        lastDate: DateTime(2101));
-    if (picked != null && picked != _dateTime) {
-      setState(() {
-        _dateTime = picked;
-        _eventDateController.text = "${_dateTime.toLocal()}".split(' ')[0];
-      });
-    }
+ Future<void> _selectDate(BuildContext context) async {
+  final DateTime picked = await showDatePicker(
+      context: context,
+      initialDate: _dateTime ?? DateTime(2000),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now());
+  if (picked != null && picked != _dateTime) {
+    setState(() {
+      _dateTime = picked;
+      _eventDateController.text = "${_dateTime.toLocal()}".split(' ')[0];
+    });
   }
+}
+
+
 
   //send SMS for events
-  final twilioFlutter = TwilioFlutter(
-      accountSid: 'ACcd02f43e099f0a0315585d9c8e7a9583',
-      authToken: 'd068fa6f49937c10aeaa32a6eb8d923b',
-      twilioNumber: '+15075688355');
+  // final twilioFlutter = TwilioFlutter(
+  //     accountSid: 'ACcd02f43e099f0a0315585d9c8e7a9583',
+  //     authToken: 'd068fa6f49937c10aeaa32a6eb8d923b',
+  //     twilioNumber: '+15075688355');
 
-  Future<void> sendSmsNotification(
-      String phoneNumber,
-      String message,
-      String eventType,
-      String companyInvolved,
-      DateTime eventDate,
-      String busName) async {
-    try {
-      final result = await twilioFlutter.sendSMS(
-          toNumber: phoneNumber, messageBody: message);
-      print(result);
-    } catch (e) {
-      print(e.toString());
-    }
-  }
+  // Future<void> sendSmsNotification(
+  //     String phoneNumber,
+  //     String message,
+  //     String eventType,
+  //     String companyInvolved,
+  //     DateTime eventDate,
+  //     String busName) async {
+  //   try {
+  //     final result = await twilioFlutter.sendSMS(
+  //         toNumber: phoneNumber, messageBody: message);
+  //     print(result);
+  //   } catch (e) {
+  //     print(e.toString());
+  //   }
+  // }
 
-  //sending email
-  Future<void> _sendEmail(
-      String apiKey,
-      String toEmail,
-      String message,
-      String eventType,
-      String companyInvolved,
-      DateTime eventDate,
-      String busName) async {
-    final url = Uri.parse(
-        'https://cors-anywhere.herokuapp.com/https://api.sendgrid.com/v3/mail/send'); // <-- modified URL
+  // //sending email
+  // Future<void> _sendEmail(
+  //     String apiKey,
+  //     String toEmail,
+  //     String message,
+  //     String eventType,
+  //     String companyInvolved,
+  //     DateTime eventDate,
+  //     String busName) async {
+  //   final url = Uri.parse(
+  //       'https://cors-anywhere.herokuapp.com/https://api.sendgrid.com/v3/mail/send'); // <-- modified URL
 
-    final headers = {
-      'Authorization': 'Bearer $apiKey',
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest', // <-- added header
-    };
+  //   final headers = {
+  //     'Authorization': 'Bearer $apiKey',
+  //     'Content-Type': 'application/json',
+  //     'X-Requested-With': 'XMLHttpRequest', // <-- added header
+  //   };
 
-    final body = {
-      'personalizations': [
-        {
-          'to': [
-            {'email': '$toEmail'}
-          ],
-          'subject': 'Bus System Notification',
-        }
-      ],
-      'from': {'email': 'soloowfestus@gmail.com'},
-      'content': [
-        {'type': 'text/html', 'value': message}
-      ],
-    };
+  //   final body = {
+  //     'personalizations': [
+  //       {
+  //         'to': [
+  //           {'email': '$toEmail'}
+  //         ],
+  //         'subject': 'Bus System Notification',
+  //       }
+  //     ],
+  //     'from': {'email': 'soloowfestus@gmail.com'},
+  //     'content': [
+  //       {'type': 'text/html', 'value': message}
+  //     ],
+  //   };
 
-    try {
-      final response =
-          await http.post(url, headers: headers, body: jsonEncode(body));
-      if (response.statusCode == 202) {
-        print('Email sent successfully.');
-      } else {
-        throw Exception(
-            'Failed to send email. Status code: ${response.statusCode}');
-      }
-    } catch (e) {
-      print(e);
-    }
-  }
+  //   try {
+  //     final response =
+  //         await http.post(url, headers: headers, body: jsonEncode(body));
+  //     if (response.statusCode == 202) {
+  //       print('Email sent successfully.');
+  //     } else {
+  //       throw Exception(
+  //           'Failed to send email. Status code: ${response.statusCode}');
+  //     }
+  //   } catch (e) {
+  //     print(e);
+  //   }
+  // }
 }

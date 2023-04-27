@@ -7,9 +7,6 @@ class AuthService {
   final FirebaseAuth _auth =
       FirebaseAuth.instance; //Initializing firebase Authentication
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-
-  final CollectionReference userInfoCollection =
-      FirebaseFirestore.instance.collection("AuthorisedUsers");
   String uid;
   // Get the current user
   User get currentUser => _auth.currentUser;
@@ -23,16 +20,52 @@ class AuthService {
     return _auth.authStateChanges().map(_userFromFirebaseUser);
   }
 
-  //method to sign out
-  Future signOutUser() async {
-    try {
-      print("User being signed out...###");
-      return await _auth.signOut();
-    } catch (e) {
-      print("Error is.." + e.toString());
-      return null;
+  //registering authorised users.
+ Future<bool> registerUser(
+  String fullName, String username, String password, String phone) async {
+  try {
+    // Create the user account with email and password
+    UserCredential userCredential =
+        await _auth.createUserWithEmailAndPassword(
+      email: username,
+      password: password,
+    );
+
+    // Add the user data to the "Users" collection
+    await FirebaseFirestore.instance
+        .collection("RegisteredUsers")
+        .doc(userCredential.user.uid)
+        .set({
+      "fullName": fullName,
+      "username": username,
+      "role": "admin",
+      "phone": phone,
+      // hardcoded "role" field with value "admin"
+    });
+
+    print("User account created with email and password");
+    return true; // registration successful
+  } on FirebaseAuthException catch (e) {
+    if (e.code == 'weak-password') {
+      print('The password provided is too weak.');
+    } else if (e.code == 'email-already-in-use') {
+      print('The account already exists for that email.');
+    } else {
+      print(e.toString());
     }
+    return false; // registration failed
+  } catch (e) {
+    print(e.toString());
+    return false; // registration failed
   }
+}
+
+
+  //checks if email is similar or exists
+  
+
+  final CollectionReference userInfoCollection =
+      FirebaseFirestore.instance.collection("RegisteredUsers");
 
   //Sign in user. By doing this, an account is created automatically
   Future signInWithEmailAndPassword(String email, String password) async {
@@ -40,16 +73,7 @@ class AuthService {
       UserCredential result = await _auth.signInWithEmailAndPassword(
           email: email, password: password);
       User user = result.user;
-
-      // Create a document for the user in the 'AuthorisedUsers' collection
-      await _db.collection('AuthorisedUsers').doc(user.uid).set({
-        'email': email,
-        'password': password,
-        'fullName': 'Festus Munene',
-        'phoneNumber': '+254797764187',
-        'role': 'admin',
-      });
-
+      print("User successfully logged in");
       return _userFromFirebaseUser(user).toString();
     } catch (e) {
       print(e.toString());
@@ -66,7 +90,7 @@ class AuthService {
 //getting the user data of the logged in user
   Future<Map<String, dynamic>> getUserData(String userId) async {
     DocumentSnapshot snapshot = await FirebaseFirestore.instance
-        .collection('AuthorisedUsers')
+        .collection('RegisteredUsers')
         .doc(userId)
         .get();
 
@@ -77,8 +101,19 @@ class AuthService {
   Future<void> updateUserData(
       String userId, Map<String, dynamic> newData) async {
     await FirebaseFirestore.instance
-        .collection('AuthorisedUsers')
+        .collection('RegisteredUsers')
         .doc(userId)
         .update(newData);
+  }
+
+  //method to sign out
+  Future signOutUser() async {
+    try {
+      print("User being signed out...###");
+      return await _auth.signOut();
+    } catch (e) {
+      print("Error is.." + e.toString());
+      return null;
+    }
   }
 }

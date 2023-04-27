@@ -3,10 +3,13 @@ import 'dart:math';
 import 'package:bus_management_system/constants/style.dart';
 import 'package:bus_management_system/layout.dart';
 import 'package:bus_management_system/models/user_model.dart';
+import 'package:bus_management_system/pages/onboarding_screen/registration.dart';
 import 'package:bus_management_system/routings/routes.dart';
 import 'package:bus_management_system/services/auth.dart';
 import 'package:bus_management_system/widgets/custom_text.dart';
 import 'package:bus_management_system/widgets/side_menu.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/gestures.dart';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -95,7 +98,10 @@ class _LoginPageState extends State<LoginPage> {
                     controller: _email,
                     validator: (value) {
                       if (value.isEmpty) {
-                        return 'Please enter Email Address';
+                        return 'Please enter an email address';
+                      } else if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                          .hasMatch(value)) {
+                        return 'Please enter a valid email address';
                       }
                       return null;
                     },
@@ -111,8 +117,14 @@ class _LoginPageState extends State<LoginPage> {
                     height: 15,
                   ),
                   TextFormField(
-                    validator: (val) =>
-                        val?.length == 0 ? 'Enter Password' : null,
+                    validator: (value) {
+                      if (value.isEmpty) {
+                        return 'Please enter a password';
+                      } else if (value.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
+                      return null;
+                    },
                     controller: _password,
                     obscureText: _obscureText,
                     decoration: InputDecoration(
@@ -139,9 +151,34 @@ class _LoginPageState extends State<LoginPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      CustomText(
-                        text: "Forgot Password?",
-                        color: iconsColor,
+                      GestureDetector(
+                        child: CustomText(
+                          text: "Forgot Password?",
+                          color: iconsColor,
+                        ),
+                        onTap: () async {
+                          String email = _email
+                              .text; // get the user's email from a text field or other input
+                          try {
+                            await FirebaseAuth.instance
+                                .sendPasswordResetEmail(email: email);
+                                 ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("Please check you email Address $email for password resetting instructions"),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            // show a success message to the user
+                          } on FirebaseAuthException catch (e) {
+                            if (e.code == 'user-not-found') {
+                              // show an error message to the user indicating that the email address is not associated with any account
+                            } else {
+                              // show a generic error message to the user
+                            }
+                          } catch (e) {
+                            // show a generic error message to the user
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -157,12 +194,13 @@ class _LoginPageState extends State<LoginPage> {
                           String email = _email.text;
                           String password = _password.text;
                           String error = "";
-                      
+
+                          //  await _auth.registerUser();
                           if (formKey.currentState.validate()) {
                             setState(() => _loading = true);
                             dynamic result = await _auth
                                 .signInWithEmailAndPassword(email, password);
-                        
+
                             if (result == null) {
                               setState(() {
                                 error = "Wrong username or password";
@@ -209,13 +247,23 @@ class _LoginPageState extends State<LoginPage> {
                     height: 15,
                   ),
                   RichText(
-                      text: TextSpan(children: [
-                    const TextSpan(text: "Not A User? Contact Admin  "),
-                    TextSpan(
-                      text: "Request Credentials",
-                      style: TextStyle(color: iconsColor),
-                    ),
-                  ]))
+                    text: TextSpan(children: [
+                      const TextSpan(text: "Not A User? "),
+                      TextSpan(
+                        text: "Register",
+                        style: TextStyle(color: iconsColor),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const RegistrationPage()),
+                            );
+                          },
+                      ),
+                    ]),
+                  )
                 ],
               ),
             ),

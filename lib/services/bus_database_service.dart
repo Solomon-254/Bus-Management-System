@@ -4,6 +4,7 @@ import 'package:bus_management_system/models/bus_model.dart';
 import 'package:bus_management_system/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 class BusDatabaseService {
   final String uid;
@@ -174,25 +175,33 @@ class BusDatabaseService {
     return busNames;
   }
 
+  //Checking whether busname added uis similar to what exist to prevent redundancy
+   //get a list of buses.
+  Future<List<String>> getBusNamesForkey() async {
+    QuerySnapshot snapshot = await busCollection.get();
+    List<String> busNames = snapshot.docs
+        .map((doc) => (doc.data() as Map<String, dynamic>)['busName'].toString())
+        .toList();
+    print(busNames);
+    return busNames;
+  }
 
   //fget a list of bus licence disk based on the bus name
   Future<String> getBusLicenceDisk(String busName) async {
-  try {
-    QuerySnapshot querySnapshot = await busCollection
-        .where('busName', isEqualTo: busName)
-        .get();
+    try {
+      QuerySnapshot querySnapshot =
+          await busCollection.where('busName', isEqualTo: busName).get();
 
-    if (querySnapshot.docs.isNotEmpty) {
-      Map<String, dynamic> data = querySnapshot.docs.first.data();
-      String licenceDisk = data['plateNumber'];
-      return licenceDisk;
-    } else {
-      throw Exception('No data found for bus $busName');
+      if (querySnapshot.docs.isNotEmpty) {
+        Map<String, dynamic> data = querySnapshot.docs.first.data();
+        String licenceDisk = data['plateNumber'];
+        return licenceDisk;
+      } else {
+        throw Exception('No data found for bus $busName');
+      }
+    } catch (e) {
+      print('Error fetching licence disk for bus $busName: $e');
+      return null;
     }
-  } catch (e) {
-    print('Error fetching licence disk for bus $busName: $e');
-    return null;
   }
-}
-
 }

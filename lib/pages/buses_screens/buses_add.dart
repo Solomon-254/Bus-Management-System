@@ -59,6 +59,8 @@ class _AddBusesPageState extends State<AddBusesPage> {
   List<String> assignedDriversNamesList = [];
   int yearsDifference;
 
+  List<String> busNames;
+
   final FocusNode _eventDateFocusNode = FocusNode();
 
   String selectedDriver;
@@ -435,75 +437,111 @@ class _AddBusesPageState extends State<AddBusesPage> {
                         child: StatefulBuilder(builder: (context, setState) {
                           return ElevatedButton(
                             onPressed: () async {
-                             
-                            
-
                               if (formKey.currentState.validate()) {
-                                 setState(() {
-                                _isLoading =
-                                    true; // set isLoading to true when the button is clicked
-                              });
-
-                                String busName = _busNameController.text;
-                              String registrationNumber =
-                                  _registrationController.text;
-                              String plateNumber = _plateNumberController.text;
-                              String assignedDriver = selectedDriver;
-
-                              String workshopManager = selectedWorkshopManager;
-
-                              String makeOfCar = _makemodelController.text;
-                              DateTime yearOfManufacture = _yearofManufacture;
-
-                              DateTime busRoadWorthyExpiryDate =
-                                  _busRoadWorthyExpiryDate;
-                              DateTime licenceDiskExpiryDate = DateTime.parse(
-                                  _driverLicenceNumberExpiryController.text);
-
-                              String serviceIntervalInKm =
-                                  _serviceIntervalInKmController.text + "KM";
-                              String serviceAgent =
-                                  _serviceAgentController.text;
-                              String notes = _notescontroller.text;
-
-                              print(licenceDiskExpiryDate.toString() +
-                                  "is the date selected");
-
-                                await BusDatabaseService()
-                                    .addBusDataToFirestore(
-                                        busName,
-                                        registrationNumber,
-                                        plateNumber,
-                                        assignedDriver,
-                                        workshopManager,
-                                        makeOfCar,
-                                        yearOfManufacture,
-                                        licenceDiskExpiryDate,
-                                        busRoadWorthyExpiryDate,
-                                        licenceDiskExpiryDate,
-                                        serviceIntervalInKm,
-                                        serviceAgent,
-                                        notes);
-                                _showSuccessDialog();
+                                busNames = await BusDatabaseService()
+                                    .getBusNamesForkey();
+                                print("Bus names are below");
+                                print(busNames);
                                 setState(() {
                                   _isLoading =
-                                      false; // set isLoading to false once the operation is completed
+                                      true; // set isLoading to true when the button is clicked
                                 });
 
-                                //Moves to next page
-                                await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => BusesPage()));
+                                String busName = _busNameController.text;
+
+                                if (busNames.contains(busName)) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        title: const Text(
+                                          'Bus Name Already Exists',
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                        content: Text(
+                                            'The bus name $busName already exists. Please choose a different name.'),
+                                        actions: <Widget>[
+                                          FlatButton(
+                                            child: Text('OK'),
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                  setState(() {
+                                    _isLoading = false;
+                                  });
+                                } else {
+                                  String registrationNumber =
+                                      _registrationController.text;
+                                  String plateNumber =
+                                      _plateNumberController.text;
+                                  String assignedDriver = selectedDriver;
+
+                                  String workshopManager =
+                                      selectedWorkshopManager;
+
+                                  String makeOfCar = _makemodelController.text;
+                                  DateTime yearOfManufacture =
+                                      _yearofManufacture;
+
+                                  DateTime busRoadWorthyExpiryDate =
+                                      _busRoadWorthyExpiryDate;
+                                  DateTime licenceDiskExpiryDate =
+                                      DateTime.parse(
+                                          _driverLicenceNumberExpiryController
+                                              .text);
+
+                                  String serviceIntervalInKm =
+                                      _serviceIntervalInKmController.text +
+                                          "KM";
+                                  String serviceAgent =
+                                      _serviceAgentController.text;
+                                  String notes = _notescontroller.text;
+
+                                  print(licenceDiskExpiryDate.toString() +
+                                      "is the date selected");
+
+                                  await BusDatabaseService()
+                                      .addBusDataToFirestore(
+                                          busName,
+                                          registrationNumber,
+                                          plateNumber,
+                                          assignedDriver,
+                                          workshopManager,
+                                          makeOfCar,
+                                          yearOfManufacture,
+                                          licenceDiskExpiryDate,
+                                          busRoadWorthyExpiryDate,
+                                          licenceDiskExpiryDate,
+                                          serviceIntervalInKm,
+                                          serviceAgent,
+                                          notes);
+                                  _showSuccessDialog();
+                                  setState(() {
+                                    _isLoading =
+                                        false; // set isLoading to false once the operation is completed
+                                  });
+
+                                  //Moves to next page
+                                  await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => BusesPage()));
+                                }
+
                                 //Adding data to Firestore collection buses
 
                               }
                             },
                             child: _isLoading
-                                ? CircularProgressIndicator()
+                                ? const CircularProgressIndicator()
                                 : const Text(
                                     "Save",
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 20,
                                     ),
                                   ),

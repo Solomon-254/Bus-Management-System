@@ -20,6 +20,7 @@ class _UsersListState extends State<UsersList> {
   TextEditingController _searchController = TextEditingController();
   //Implemetation of searching data in the datatable
   List<Users> _filteredUsers = [];
+  TextEditingController _licenceExpiryController;
 
   void _performSearch(List<Users> usersList) {
     setState(() {
@@ -55,6 +56,7 @@ class _UsersListState extends State<UsersList> {
     String emailAddress;
     String phoneNumber;
     String role;
+    // DateTime licenceExpiryDate;
     bool _isLoading = false;
 
     showDialog(
@@ -67,7 +69,8 @@ class _UsersListState extends State<UsersList> {
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
                   UsersUserData usersUserData = snapshot.data;
-
+                  _licenceExpiryController =
+                      TextEditingController(text: usersUserData.licenceExpiry.toString());
                   return Form(
                     key: formKey,
                     child: Column(
@@ -121,20 +124,52 @@ class _UsersListState extends State<UsersList> {
                             });
                           },
                         ),
+                        DropdownButtonFormField<String>(
+                          decoration:
+                              const InputDecoration(labelText: 'Assigned Role'),
+                          value: role ?? usersUserData.role,
+                          items: const [
+                            DropdownMenuItem(
+                              child: Text('Driver'),
+                              value: 'Driver',
+                            ),
+                            DropdownMenuItem(
+                              child: Text('Workshop Manager'),
+                              value: 'Workshop Manager',
+                            ),
+                            DropdownMenuItem(
+                              child: Text('Other'),
+                              value: 'Other',
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              role = value;
+                            });
+                          },
+                        ),
                         TextFormField(
-                          initialValue: usersUserData.role,
+                          controller: _licenceExpiryController,
                           validator: (value) {
                             if (value.isEmpty) {
                               return 'This field cannot be empty';
                             }
                             return null;
                           },
-                          decoration:
-                              const InputDecoration(labelText: 'Assigned Role'),
-                          onChanged: (value) {
-                            setState(() {
-                              role = value;
-                            });
+                          decoration: const InputDecoration(
+                              labelText: 'Licence Expiry Date'),
+                          onTap: () async {
+                            final pickedDate = await showDatePicker(
+                              context: context,
+                              initialDate:
+                                  usersUserData.licenceExpiry ?? DateTime.now(),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime(2100),
+                            );
+                            if (pickedDate != null) {
+                              _licenceExpiryController.text =
+                                  pickedDate.toString();
+                            }
                           },
                         ),
                         Row(
@@ -162,7 +197,9 @@ class _UsersListState extends State<UsersList> {
                                               usersUserData.emailAddress,
                                           phoneNumber ??
                                               usersUserData.phoneNumber,
-                                          role ?? usersUserData.role);
+                                          role ?? usersUserData.role,
+                                          DateTime.parse(_licenceExpiryController.text) ??
+                                              usersUserData.licenceExpiry);
                                   setState(() {
                                     _isLoading = false;
                                   });

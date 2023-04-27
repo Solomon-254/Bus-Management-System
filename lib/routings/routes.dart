@@ -27,6 +27,8 @@ const AddUsersRoute = "/AddUsers";
 
 const AddRoutesRoute = "/AddRoute";
 
+const DownloadBusFilesRoute = '/DownloadBusFiles';
+
 const AuthenticationViewRoute = "/Login";
 const AuthenticationDisplayName = "Log Out";
 

@@ -3,6 +3,7 @@ import 'package:bus_management_system/pages/users_screens/users.dart';
 import 'package:bus_management_system/services/user_database_service.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AddUsersPage extends StatefulWidget {
@@ -15,7 +16,7 @@ class _AddUsersPageState extends State<AddUsersPage> {
   String _selectedRole;
   final _formKey = GlobalKey<FormState>();
 
-  String _selectedCountryCode;
+  String _selectedCountryCode = '+27';
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneNumberController = TextEditingController();
@@ -34,8 +35,7 @@ class _AddUsersPageState extends State<AddUsersPage> {
           Navigator.of(context).pop(true);
         });
         return AlertDialog(
-          content:
-              Text("User successfully registered"),
+          content: Text("User successfully registered"),
         );
       },
     );
@@ -152,6 +152,8 @@ class _AddUsersPageState extends State<AddUsersPage> {
                                 }
                                 return null;
                               },
+                               inputFormatters: <TextInputFormatter>[
+                              FilteringTextInputFormatter.digitsOnly],
                               keyboardType: TextInputType.phone,
                               decoration: InputDecoration(
                                 labelText: "Phone Number",
@@ -248,7 +250,7 @@ class _AddUsersPageState extends State<AddUsersPage> {
                                     });
                                     String fullName = _fullNameController.text;
                                     String emailAddress = _emailController.text;
-                                    String phoneNumber =
+                                    String phoneNumber = _selectedCountryCode+
                                         _phoneNumberController.text;
                                     String selectedRole = _selectedRole;
                                     DateTime licenceExpiryDate =

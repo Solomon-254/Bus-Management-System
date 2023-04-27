@@ -160,6 +160,7 @@ class EventsDatabaseService {
     await docRef.set({
       'EMAIL SENT': emailMessage,
       'SMS SENT': smsmessage,
+      'isNotificationSeen': false
     });
   }
 

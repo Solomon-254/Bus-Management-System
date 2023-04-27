@@ -40,12 +40,12 @@ class SideMenu extends StatelessWidget {
                     const Padding(
                         padding: EdgeInsets.only(right: 12),
                         child: CircleAvatar(
-                          radius: 15,
+                          radius: 25,
                         )),
                     Flexible(
                       child: StreamBuilder<DocumentSnapshot>(
                         stream: _db
-                            .collection('AuthorisedUsers')
+                            .collection('RegisteredUsers')
                             .doc(_auth.currentUser.uid)
                             .snapshots(),
                         builder: (BuildContext context,
@@ -55,7 +55,7 @@ class SideMenu extends StatelessWidget {
                             String fullName = data['fullName'] ?? '';
 
                             return CustomText(
-                              text: fullName + " ,Admin",
+                              text: fullName,
                               color: textColor,
                             );
                           } else if (snapshot.hasError) {

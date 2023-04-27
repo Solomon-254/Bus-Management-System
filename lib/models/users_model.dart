@@ -21,11 +21,13 @@ class UsersUserData {
   String emailAddress;
   String phoneNumber;
   String role;
+  DateTime licenceExpiry;
 
   UsersUserData(
       {this.uid,
       this.fullName,
       this.emailAddress,
       this.phoneNumber,
-      this.role});
+      this.role,
+      this.licenceExpiry});
 }

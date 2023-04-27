@@ -4,7 +4,7 @@ import 'package:bus_management_system/services/auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:mailer/mailer.dart';
+// import 'package:mailer/mailer.dart';
 import 'package:twilio_flutter/twilio_flutter.dart';
 import '../../constants/controller.dart';
 import '../../helpers/responsivenes.dart';
@@ -42,6 +42,10 @@ class _SettingsPageState extends State<SettingsPage> {
     roleController = TextEditingController();
     emailController = TextEditingController();
     passwordController = TextEditingController();
+    // const apiKey = //testing sendgrid for instant sending
+    //     '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';
+    // const toEmail = 'soloowfestus@gmail.com';
+    // _sendEmail(apiKey, toEmail);
   }
 
 // //functionality to implement notifications sending
@@ -50,10 +54,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
 //sending SMS notification using twilio API
 // ignore: missing_required_param
-  final twilioFlutter = TwilioFlutter(
-      accountSid: 'AC635ac4bd9505b3f52d9ff8ad94d73ba6',
-      authToken: '39200070badd09315473933ebd6eca28',
-      twilioNumber: '+15855356484');
+  // final twilioFlutter = TwilioFlutter(
+  //     accountSid: 'AC635ac4bd9505b3f52d9ff8ad94d73ba6',
+  //     authToken: '39200070badd09315473933ebd6eca28',
+  //     twilioNumber: '+15855356484');
 
   // Future<void> sendSmsNotification(String phoneNumber) async {
   //   try {
@@ -68,7 +72,7 @@ class _SettingsPageState extends State<SettingsPage> {
   //   }
   // }
 
-//sending email notifications using twilio sendgrid API
+// sending email notifications using twilio sendgrid API
   // Future<void> _sendEmail(String apiKey, String toEmail) async {
   //   final url = Uri.parse(
   //       'https://cors-anywhere.herokuapp.com/https://api.sendgrid.com/v3/mail/send'); // <-- modified URL
@@ -88,7 +92,7 @@ class _SettingsPageState extends State<SettingsPage> {
   //         'subject': 'Bus System Notification',
   //       }
   //     ],
-  //     'from': {'email': 'soloowfestus@gmail.com'},
+  //     'from': {'email': 'algoabusessa@gmail.com'},
   //     'content': [
   //       {
   //         'type': 'text/html',
@@ -190,8 +194,10 @@ class _SettingsPageState extends State<SettingsPage> {
                                 });
                               },
                             ),
+
                             TextFormField(
                               // controller: phoneNumberController,
+                              
                               validator: (value) {
                                 if (value.isEmpty) {
                                   return 'This field cannot be empty';
@@ -201,20 +207,22 @@ class _SettingsPageState extends State<SettingsPage> {
                               decoration: const InputDecoration(
                                   labelText: 'Phone Number'),
                               enabled: true,
-                              initialValue: userData['phoneNumber'] ??
+                              initialValue: userData['phone'] ??
                                   '', //initial value for logged in user
                               onChanged: (value) {
                                 setState(() {
                                   phoneNumberController.text = value;
                                 });
                               },
+
+                            
                             ),
                             TextFormField(
                               // controller: emailController,
                               decoration: const InputDecoration(
                                   labelText: 'Email Address'),
                               enabled: false,
-                              initialValue: userData['email'] ??
+                              initialValue: userData['username'] ??
                                   '', //initial value for logged in user
                               onChanged: (value) {
                                 setState(() {
@@ -231,10 +239,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           onPressed: () async {
                             // Call the updateUserData function with the updated data
                             await auth.updateUserData(uid, {
-                              'fullName': fullNameController.text.trim(),
-                              'phoneNumber': phoneNumberController.text.trim(),
-                              'role': roleController.text.trim(),
-                              'email': emailController.text.trim(),
+                              'fullName': fullNameController.text.trim() ?? userData['fullName'],
+                              'phone': phoneNumberController.text.trim() ?? userData['phoneNumber'],
+                              'role': "admin" ??  userData['role'],
+                              'email': emailController.text.trim() ?? userData['email'] ,
                             });
 
                             Navigator.of(context).pop();
@@ -280,7 +288,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 color: iconsColor,
                               ),
                               SizedBox(width: 10),
-                              Text("Phone number: ${userData['phoneNumber']}"),
+                              Text("Phone number: ${userData['phone']}"),
                             ],
                           ),
                           SizedBox(height: 10),
@@ -291,7 +299,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 color: iconsColor,
                               ),
                               SizedBox(width: 10),
-                              Text("Email address: ${userData['email']}"),
+                              Text("Email address: ${userData['username']}"),
                             ],
                           ),
                         ],

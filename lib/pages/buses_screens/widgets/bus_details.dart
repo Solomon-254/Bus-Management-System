@@ -1,12 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
-
 import 'package:bus_management_system/constants/style.dart';
+import 'package:bus_management_system/pages/buses_screens/widgets/download_bus_file_uploaded.dart';
 import 'package:bus_management_system/services/bus_database_service.dart';
 import 'package:bus_management_system/services/routes_database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:twilio_flutter/twilio_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
 
 class BusDetailsPage extends StatefulWidget {
   final String busName;
@@ -64,17 +70,22 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
   DateTime currentDate;
   Duration difference;
   int differenceInYears;
-
+  double _uploadProgress = 0;
   bool isLoading = false;
   bool isSmsSent = false;
+  bool isEmailSent = false;
+  bool isNotificationSentforLicenceDiskExpiry = false;
+  bool isNotificationSentForDriverLicenceExpiry = false;
+  bool isNotificationSentForBusRoadworthinessExpiry = false;
+
   String phoneNumber =
       'Verified phone number for client recieving messages from an api ';
 
 //TEST VARIABLES FOR SMS TWILIO IMPLEMENTATION
-  final twilioFlutter = TwilioFlutter(
-      accountSid: 'ACcd02f43e099f0a0315585d9c8e7a9583',
-      authToken: 'd068fa6f49937c10aeaa32a6eb8d923b',
-      twilioNumber: '+15075688355');
+  // final twilioFlutter = TwilioFlutter(
+  //     accountSid: 'ACcd02f43e099f0a0315585d9c8e7a9583',
+  //     authToken: '69309f38562cead3cbbff526c01d7d2c',
+  //     twilioNumber: '+15075688355');
 
   String licencemessage1;
   String licencemessage2;
@@ -96,7 +107,7 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
 
 // VAIALBLES FOR SENDING EMAIL TESTING
   final apiKey =
-      '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';
+      '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';
   final toEmail = 'soloowfestus@gmail.com';
   // final expiryDateUtc = DateTime.utc(
   //     2023, 4, 9, 9, 34, 0); // Replace with your expiry date and time in UTC
@@ -116,6 +127,35 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
     });
   }
 
+  //get content type of uploaded data
+  String _getContentType(String fileName) {
+    String extension = p.extension(fileName);
+    switch (extension) {
+      case '.pdf':
+        return 'application/pdf';
+      case '.png':
+        return 'image/png';
+      case '.jpg':
+        return 'image/jpg';
+      case '.jpeg':
+        return 'image/jpeg';
+      case '.txt':
+        return 'application/text';
+      case '.doc':
+      case '.docx':
+        return 'application/msword';
+      case '.xls':
+      case '.xlsx':
+        return 'application/ms-excel';
+      case '.ppt':
+      case '.pptx':
+        return 'application/ms-powerpoint';
+
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -128,13 +168,13 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
 
     //TESTS FOR BUS AGE SMS SENDING
 
-    // sendSmsReminder('+254796779568', widget.busName, differenceInYears,
+    // sendSmsReminder('+254796779568', widget.busName, differenceInYears, //sms email test
     //     widget.serviceIntervalInKm);
 
     //TESTS FOR SENDING EMAILS AFTER EVERY 1MINUTE for TESTING Purposes
 
     // startSendingCustomEmails(apiKey, toEmail, widget.busName, differenceInYears,
-    //     widget.serviceIntervalInKm, widget.licenceDisk);
+    //     widget.serviceIntervalInKm, widget.licenceDisk); //age email test
 
     //DEPLOYMENT CODE FOR SMS SENDING AFTER EVERY 5YEARS
 
@@ -147,46 +187,71 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
     //     widget.serviceIntervalInKm, widget.licenceDisk);
 
     //-------------------TESTS
-    licencemessage1 =
-        'Dear Admin, bus ${widget.busName} of ${widget.makeOfBus} with a licence plate of ${widget.licenceDisk} expires in exactly 2 minutes time. Please renew!! \nAlgoa Bus Inc ';
-    licencemessage2 =
-        'Dear Admin, bus ${widget.busName} of ${widget.makeOfBus} with a licence plate of ${widget.licenceDisk} expires in exactly 1 minute time. Please renew!! \n--Algoa Bus Inc  ';
-    sendSmsNotification(
-        '+254796779568',
-        DateTime.utc(2023, 4, 9, 13, 44, 0), //UTC IS 3 HOURS AHEAD OF EAT
-        licencemessage1,
-        licencemessage2); //testing apis purposes
+    // licencemessage1 = //licence disk expiry test
+    //     'Dear Admin, bus ${widget.busName} of ${widget.makeOfBus} with a licence plate of ${widget.licenceDisk} expires in exactly 2 minutes time. Please renew!! \nAlgoa Bus Inc ';
+    // licencemessage2 =
+    //     'Dear Admin, bus ${widget.busName} of ${widget.makeOfBus} with a licence plate of ${widget.licenceDisk} expires in exactly 1 minute time. Please renew!! \n--Algoa Bus Inc  ';
+    // sendSmsNotification(
+    //     '+254796779568',
+    //     DateTime.utc(2023, 4, 25, 7, 24, 0), //UTC IS 3 HOURS AHEAD OF EAT
+    //     licencemessage1,
+    //     licencemessage2); //testing apis purposes
 
-    driverlicencemessage1 =
-        'Dear Admin, driver ${widget.assignedDriver} of bus ${widget.busName} driver\'s expires in exactly 2 minutes time. Please alert the driver to renew!! \nAlgoa Bus Inc ';
-    driverlicencemessage1 =
-        'Dear Admin, driver ${widget.assignedDriver} of bus ${widget.busName} driver\'s expires in exactly 1 minutes time. Please alert the driver to renew!! \nAlgoa Bus Inc ';
-    sendSmsNotification('+254796779568', DateTime.utc(2023, 4, 9, 13, 44, 0),
-        driverlicencemessage1, driverlicencemessage2); //testing apis purposes
+    // driverlicencemessage1 = //driver's liceence expiry  test
+    //     'Dear Admin, driver ${widget.assignedDriver} of bus ${widget.busName} driver\'s expires in exactly 2 minutes time. Please alert the driver to renew!! \nAlgoa Bus Inc ';
+    // driverlicencemessage1 =
+    //     'Dear Admin, driver ${widget.assignedDriver} of bus ${widget.busName} driver\'s expires in exactly 1 minutes time. Please alert the driver to renew!! \nAlgoa Bus Inc ';
+    // sendSmsNotification('+254796779568', DateTime.utc(2023, 4, 25, 07, 55, 0),
+    //     driverlicencemessage1, driverlicencemessage2); //testing apis purposes
 
-    roadworthinesslicencemessage1 =
-        'Dear Admin, bus ${widget.busName} of licence ${widget.licenceDisk} road worthiness licence expires in exactly 2 minutes time. Please renew!! \nAlgoa Bus Inc ';
-    roadworthinesslicencemessage2 =
-        'Dear Admin, bus ${widget.busName} of licence ${widget.licenceDisk} road worthiness licence expires in exactly 1 minute time. Please renew!! \nAlgoa Bus Inc ';
-    sendSmsNotification(
-        '+254796779568',
-        DateTime.utc(2023, 4, 9, 13, 43, 0),
-        roadworthinesslicencemessage1,
-        roadworthinesslicencemessage2); //testing apis purposes
+    // roadworthinesslicencemessage1 = //roadworthiness of bus expiry test
+    //     'Dear Admin, bus ${widget.busName} of licence ${widget.licenceDisk} road worthiness licence expires in exactly 2 minutes time. Please renew!! \nAlgoa Bus Inc ';
+    // roadworthinesslicencemessage2 =
+    //     'Dear Admin, bus ${widget.busName} of licence ${widget.licenceDisk} road worthiness licence expires in exactly 1 minute time. Please renew!! \nAlgoa Bus Inc ';
+    // sendSmsNotification(
+    //     '+254796779568',
+    //     DateTime.utc(2023, 4, 25, 06, 55, 0),
+    //     roadworthinesslicencemessage1,
+    //     roadworthinesslicencemessage2); //testing apis purposes
 
     //---------*******************EMAIL SENDING
     //TESTS
 
-    DateTime expiryDate = DateTime(2023, 4, 9, 16, 50,
+    DateTime expiryDate = DateTime(2023, 4, 25, 09, 55,
         0); // Replace with your actual expiry date in your timezone eg EAT
     DateTime now = DateTime.now();
 
-    if (expiryDate.isAfter(now)) {
-      _sendEmail(apiKey, toEmail, expiryDate);
-    } else {
-      print("Expiry has elapsed. Cannot send email.");
-      //-----------------------------------------------------------------------------------Testing Completed
-    }
+    String emailLicenceDiskmessage1 =
+        '<p>Dear <strong>Admin</strong>! Bus ${widget.busName} of make ${widget.makeOfBus}\'s licence expires in 2 minutes time on ${widget.licenceDiskExpiryDate}. Please renew. <br> Algoa Buses Inc</p>';
+    String emailLicenceDiskmessage2 =
+        '<p>Dear <strong>Admin</strong>! Bus ${widget.busName} of make ${widget.makeOfBus}\'s licence expires in 1 minutes time on ${widget.licenceDiskExpiryDate}. Please renew. <br> Algoa Buses Inc</p>';
+
+    String emailDriverlicencemessage1 =
+        '<p>Dear <strong>Admin</strong>! Driver ${widget.assignedDriver} of bus ${widget.busName}\'s driver\'s licence expires in 2 minutes time on ${widget.driversLicenceExpiryDate}. Please alert the driver to renew. <br> Algoa Buses Inc</p>';
+    String emailDriverlicencemessage2 =
+        '<p>Dear <strong>Admin</strong>! Driver ${widget.assignedDriver} of bus ${widget.busName}\'s driver\'s licence expires in 1 minutes time on ${widget.driversLicenceExpiryDate}. Please alert the driver to renew. <br> Algoa Buses Inc</p>';
+
+    String emailRoadworthinesslicencemessage1 =
+        '<p>Dear <strong>Admin</strong>! Bus ${widget.busName} of make ${widget.makeOfBus} roadworthiness\'s licence expires in 2 minutes time on ${widget.busRoadWorthinessExpiryDate}. Please alert ${widget.workshopManager} to renew. <br> Algoa Buses Inc</p>';
+    String emailRoadworthinesslicencemessage2 =
+        '<p>Dear <strong>Admin</strong>! Bus ${widget.busName} of make ${widget.makeOfBus} roadworthiness\'s licence expires in 1 minutes time on ${widget.busRoadWorthinessExpiryDate}. Please alert ${widget.workshopManager} to renew. <br> Algoa Buses Inc</p>';
+
+    // if (expiryDate.isAfter(now)) {
+    //   _sendEmail(apiKey, toEmail, expiryDate, emailLicenceDiskmessage1,
+    //       emailLicenceDiskmessage2);
+
+    //   _sendEmail(apiKey, toEmail, expiryDate, emailDriverlicencemessage1,
+    //       emailDriverlicencemessage2);
+    //   _sendEmail(
+    //       apiKey,
+    //       toEmail,
+    //       expiryDate,
+    //       emailRoadworthinesslicencemessage1,
+    //       emailRoadworthinesslicencemessage2);
+    // } else {
+    //   print("Expiry has elapsed. Cannot send email.");
+    //   //-----------------------------------------------------------------------------------Testing Completed
+    // }
 
 //---------------------------------------------Customised Implementation using TWILIO SMS API
 
@@ -267,7 +332,9 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
     busNotesController = TextEditingController(text: widget.notes);
   }
 
-  //dialog
+  //Uploading documents on a given bus
+
+  //dialog for editing on bus details page
   void showEditDialog(BuildContext context) {
     final _formKey = GlobalKey<FormState>();
     final FocusNode _yearOfManufactureDateFocusNode = FocusNode();
@@ -278,10 +345,6 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
     String makeOfBus;
     String serviceAgent;
     String serviceIntervaldistaneInKm;
-    DateTime yearOfManufacture;
-    DateTime driversLicenceExpiryDate;
-    DateTime licenceDiskExpiryDate;
-    DateTime busRoadWorthinessExpiryDate;
     String notes;
     bool _isLoading = false;
 
@@ -418,8 +481,6 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
                           FocusScope.of(context)
                               .requestFocus(_yearOfManufactureDateFocusNode);
                           _yearOfManufacture(context);
-
-                          setState(() {});
                         },
                       ),
                       const SizedBox(height: 16),
@@ -614,8 +675,130 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
                 Icons.file_upload,
                 color: iconsColor,
               ),
-              onPressed: () {
-                // Handle upload button pressed
+              onPressed: () async {
+                FilePickerResult result = await FilePicker.platform.pickFiles();
+                if (result != null) {
+                  PlatformFile file = result.files.first;
+                  print(file.name);
+                  String busName = widget.busName;
+                  Reference busFolderRef = FirebaseStorage.instanceFor(
+                          bucket:
+                              'gs://bus-management-system-17ede.appspot.com')
+                      .ref()
+                      .child(busName);
+
+                  if (file.bytes != null) {
+                    String contentType = _getContentType(file.name);
+
+                    UploadTask task = busFolderRef.child(file.name).putData(
+                        file.bytes, SettableMetadata(contentType: contentType));
+
+                    showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text('Uploading'),
+                            content: Container(
+                              height: 50,
+                              child: StreamBuilder<TaskSnapshot>(
+                                stream: task.snapshotEvents,
+                                builder: (BuildContext context,
+                                    AsyncSnapshot<TaskSnapshot> snapshot) {
+                                  var event = snapshot?.data;
+                                  _uploadProgress = event?.bytesTransferred /
+                                      event?.totalBytes;
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      value: _uploadProgress,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            actions: <Widget>[
+                              FlatButton(
+                                child: const Text('OK'),
+                                onPressed: () {
+                                  task.cancel();
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                            ],
+                          );
+                        });
+
+                    // Wait for the upload to complete and do something
+                    await task.whenComplete(() => {
+                          Navigator.of(context).pop(),
+                          showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  title: Text('Success'),
+                                  content: Text(
+                                      '${file.name} uploaded successfully'),
+                                );
+                              }),
+                        });
+                    // ...
+                  } else if (file.path != null) {
+                    File pickedFile = File(file.path);
+                    String contentType = _getContentType(file.path);
+                    UploadTask task = busFolderRef.child(file.name).putFile(
+                        pickedFile, SettableMetadata(contentType: contentType));
+
+                    showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: Text('Uploading'),
+                            content: Container(
+                              height: 50,
+                              child: StreamBuilder<TaskSnapshot>(
+                                stream: task.snapshotEvents,
+                                builder: (BuildContext context,
+                                    AsyncSnapshot<TaskSnapshot> snapshot) {
+                                  var event = snapshot?.data;
+                                  _uploadProgress = event?.bytesTransferred /
+                                      event?.totalBytes;
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      value: _uploadProgress,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            actions: <Widget>[
+                              FlatButton(
+                                child: const Text('Cancel'),
+                                onPressed: () {
+                                  task.cancel();
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                            ],
+                          );
+                        });
+
+                    // Wait for the upload to complete and do something
+                    await task.whenComplete(() => {
+                          Navigator.of(context).pop(),
+                          showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  title: const Text('Success'),
+                                  content: Text(
+                                      '${file.name} uploaded successfully'),
+                                );
+                              }),
+                        });
+                    // ...
+                  } else {
+                    // The user canceled the file picker
+                  }
+                }
               },
             ),
           ),
@@ -863,8 +1046,15 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
                                   Icons.download,
                                   color: iconsColor,
                                 ),
-                                onPressed: () {
+                                onPressed: () async {
                                   // Handle upload button pressed
+                                  await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              DownloadBusFilesPage(
+                                                busName: widget.busName,
+                                              )));
                                 },
                               ),
                             ),
@@ -940,11 +1130,11 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
                               'Notifications Status(green-sent | grey-pending)',
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.red),
+                                  color: Colors.black),
                             ),
                           ],
                         ),
-                        SizedBox(
+                        const SizedBox(
                           height: 8,
                         ),
                         Row(
@@ -990,7 +1180,9 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color:
-                                        isSmsSent ? Colors.green : Colors.grey,
+                                        isNotificationSentforLicenceDiskExpiry
+                                            ? Colors.green
+                                            : Colors.grey,
                                   ),
                                 ),
                               ),
@@ -1026,7 +1218,9 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color:
-                                        isSmsSent ? Colors.green : Colors.grey,
+                                        isNotificationSentForBusRoadworthinessExpiry
+                                            ? Colors.green
+                                            : Colors.grey,
                                   ),
                                 ),
                               ),
@@ -1060,7 +1254,9 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color:
-                                        isSmsSent ? Colors.green : Colors.grey,
+                                        isNotificationSentForDriverLicenceExpiry
+                                            ? Colors.green
+                                            : Colors.grey,
                                   ),
                                 ),
                               ),
@@ -1215,138 +1411,158 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
   //*************************************************************************************** */
   // Here below is for testing puroses, sending sms in 2 and 1 minute ebfore deadline.
 
-  Future<void> sendSmsNotification(String phoneNumber, DateTime expiryDate,
-      String message1, String message2) async {
-    final expiryTimestamp = expiryDate.millisecondsSinceEpoch;
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final timeDiff = expiryTimestamp - now;
+  // Future<void> sendSmsNotification(String phoneNumber, DateTime expiryDate,
+  //     String message1, String message2) async {
+  //   final expiryTimestamp = expiryDate.millisecondsSinceEpoch;
+  //   final now = DateTime.now().millisecondsSinceEpoch;
+  //   final timeDiff = expiryTimestamp - now;
 
-    if (timeDiff <= 0) {
-      print('Expiry date has already passed.Cannot send SMS.');
-      return;
-    }
+  //   if (timeDiff <= 0) {
+  //     print('Expiry date has already passed.Cannot send SMS.');
+  //     return;
+  //   }
 
-    final twoMinutesBefore = Duration(milliseconds: timeDiff - 2 * 60 * 1000);
-    final oneMinuteBefore = Duration(milliseconds: timeDiff - 1 * 60 * 1000);
+  //   final twoMinutesBefore = Duration(milliseconds: timeDiff - 2 * 60 * 1000);
+  //   final oneMinuteBefore = Duration(milliseconds: timeDiff - 1 * 60 * 1000);
 
-    Timer(twoMinutesBefore, () async {
-      try {
-        final result = await twilioFlutter.sendSMS(
-            toNumber: phoneNumber, messageBody: message1
-            // 'Dear Admin, bus ${widget.busName} of service agent  ${widget.serviceAgent}  expires in exactly 2 minutes time. Please renew!! ',
-            );
-        print(result);
-        setState(() {
-          isSmsSent = true;
-        });
-      } catch (e) {
-        print(e.toString());
-      }
-    });
+  //   Timer(twoMinutesBefore, () async {
+  //     try {
+  //       final result = await twilioFlutter.sendSMS(
+  //           toNumber: phoneNumber, messageBody: message1
+  //           // 'Dear Admin, bus ${widget.busName} of service agent  ${widget.serviceAgent}  expires in exactly 2 minutes time. Please renew!! ',
+  //           );
+  //       print(result);
+  //       if (result == 201) {
+  //         setState(() {
+  //           isNotificationSentforLicenceDiskExpiry = true;
+  //           isNotificationSentForBusRoadworthinessExpiry = true;
+  //           isNotificationSentForDriverLicenceExpiry = true;
+  //         });
+  //       }
+  //     } catch (e) {
+  //       print(e.toString());
+  //     }
+  //   });
 
-    Timer(oneMinuteBefore, () async {
-      try {
-        final result = await twilioFlutter.sendSMS(
-            toNumber: phoneNumber, messageBody: message2
-            // 'Dear Admin, bus ${widget.busName} of service agent  ${widget.serviceAgent}  expires in exactly 1 minutes time. Please renew!!. Please renew!! ',
-            );
+  //   Timer(oneMinuteBefore, () async {
+  //     try {
+  //       final result = await twilioFlutter.sendSMS(
+  //           toNumber: phoneNumber, messageBody: message2
+  //           // 'Dear Admin, bus ${widget.busName} of service agent  ${widget.serviceAgent}  expires in exactly 1 minutes time. Please renew!!. Please renew!! ',
+  //           );
 
-        print(result);
-        setState(() {
-          isSmsSent = true;
-        });
-      } catch (e) {
-        print(e.toString());
-      }
-    });
-  }
+  //       print(result);
+  //       if (result == 201) {
+  //         setState(() {
+  //           isNotificationSentforLicenceDiskExpiry = true;
+  //           isNotificationSentForBusRoadworthinessExpiry = true;
+  //           isNotificationSentForDriverLicenceExpiry = true;
+  //         });
+  //       }
+  //     } catch (e) {
+  //       print(e.toString());
+  //     }
+  //   });
+  // }
 
   //Sending email for purposes of testing
 
-  Future<void> _sendEmail(
-      String apiKey, String toEmail, DateTime expiryDate) async {
-    if (expiryDate.isBefore(DateTime.now())) {
-      print('Expiry date has passed. Email not sent.');
-      return;
-    }
+  // Future<void> _sendEmail(String apiKey, String toEmail, DateTime expiryDate,
+  //     String message1, String message2) async {
+  //   if (expiryDate.isBefore(DateTime.now())) {
+  //     print('Expiry date has passed. Email not sent.');
+  //     return;
+  //   }
 
-    final url = Uri.parse(
-        'https://cors-anywhere.herokuapp.com/https://api.sendgrid.com/v3/mail/send'); // <-- modified URL
+  //   final url = Uri.parse(
+  //       'https://cors-anywhere.herokuapp.com/https://api.sendgrid.com/v3/mail/send'); // <-- modified URL
 
-    final headers = {
-      'Authorization': 'Bearer $apiKey',
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest', // <-- added header
-    };
+  //   final headers = {
+  //     'Authorization': 'Bearer $apiKey',
+  //     'Content-Type': 'application/json',
+  //     'X-Requested-With': 'XMLHttpRequest', // <-- added header
+  //   };
 
-    final body = {
-      'personalizations': [
-        {
-          'to': [
-            {'email': '$toEmail'}
-          ],
-          'subject': 'Bus System Notification',
-        }
-      ],
-      'from': {'email': 'soloowfestus@gmail.com'},
-      'content': [
-        {
-          'type': 'text/html',
-          'value':
-              '<p>Dear <strong>Admin</strong>! Bus ${widget.busName} of make ${widget.makeOfBus}\'s licence expires in 2 weeks time on ${widget.licenceDiskExpiryDate}. Please renew. <br> Algoa Buses Inc</p>'
-        }
-      ],
-    };
+  //   final body = {
+  //     'personalizations': [
+  //       {
+  //         'to': [
+  //           {'email': '$toEmail'}
+  //         ],
+  //         'subject': 'Bus System Notification',
+  //       }
+  //     ],
+  //     'from': {'email': 'algoabusessa@gmail.com'},
+  //   };
 
-    final expiryTime = expiryDate.subtract(Duration(minutes: 2));
-    final reminder1Time = expiryDate.subtract(Duration(minutes: 1));
+  //   try {
+  //     // Send first email 2 minutes before expiry
 
-    try {
-      // Send email 2 minutes before expiry
+  //     final expiryMinus2 = expiryDate.subtract(Duration(minutes: 2));
+  //     await Future.delayed(expiryMinus2.difference(DateTime.now()), () async {
+  //       if (expiryDate.isBefore(DateTime.now())) {
+  //         print('Expiry date has passed. Email not sent.');
+  //         return;
+  //       }
 
-      await Future.delayed(expiryTime.difference(DateTime.now()), () async {
-        if (expiryDate.isBefore(DateTime.now())) {
-          print('Expiry date has passed. Email not sent.');
-          return;
-        }
+  //       final body1 = Map<String, dynamic>.from(body);
+  //       body1['content'] = [
+  //         {
+  //           'type': 'text/html',
+  //           'value': message1,
+  //         },
+  //       ];
 
-        final response =
-            await http.post(url, headers: headers, body: jsonEncode(body));
-        if (response.statusCode == 202) {
-          print('Email sent 2 minutes before expiry.');
-        } else {
-          throw Exception(
-              'Failed to send email. Status code: ${response.statusCode}');
-        }
-      });
+  //       final response =
+  //           await http.post(url, headers: headers, body: jsonEncode(body1));
+  //       if (response.statusCode == 202) {
+  //         print('Email sent 2 minutes before expiry.');
+  //         setState(() {
+  //           isNotificationSentforLicenceDiskExpiry = true;
+  //           isNotificationSentForBusRoadworthinessExpiry = true;
+  //           isNotificationSentForDriverLicenceExpiry = true;
+  //         });
+  //       } else {
+  //         throw Exception(
+  //             'Failed to send email. Status code: ${response.statusCode}');
+  //       }
+  //     });
 
-      // Send email 1 minute before expiry
+  // Send second email 1 minute before expiry
 
-      await Future.delayed(reminder1Time.difference(DateTime.now()), () async {
-        if (expiryDate.isBefore(DateTime.now())) {
-          print('Expiry date has passed. Email not sent.');
-          setState(() {
-            isSmsSent = true;
-          });
-          return;
-        }
+  //     final expiryMinus1 = expiryDate.subtract(Duration(minutes: 1));
+  //     await Future.delayed(expiryMinus1.difference(DateTime.now()), () async {
+  //       if (expiryDate.isBefore(DateTime.now())) {
+  //         print('Expiry date has passed. Email not sent.');
+  //         return;
+  //       }
 
-        final response =
-            await http.post(url, headers: headers, body: jsonEncode(body));
-        if (response.statusCode == 202) {
-          print('Email sent 1 minute before expiry.');
-          setState(() {
-            isSmsSent = true;
-          });
-        } else {
-          throw Exception(
-              'Failed to send email. Status code: ${response.statusCode}');
-        }
-      });
-    } catch (e) {
-      print(e);
-    }
-  }
+  //       final body2 = Map<String, dynamic>.from(body);
+  //       body2['content'] = [
+  //         {
+  //           'type': 'text/html',
+  //           'value': message2,
+  //         },
+  //       ];
+
+  //       final response =
+  //           await http.post(url, headers: headers, body: jsonEncode(body2));
+  //       if (response.statusCode == 202) {
+  //         print('Email sent 1 minute before expiry.');
+  //         setState(() {
+  //           isNotificationSentforLicenceDiskExpiry = true;
+  //           isNotificationSentForBusRoadworthinessExpiry = true;
+  //           isNotificationSentForDriverLicenceExpiry = true;
+  //         });
+  //       } else {
+  //         throw Exception(
+  //             'Failed to send email. Status code: ${response.statusCode}');
+  //       }
+  //     });
+  //   } catch (e) {
+  //     print(e);
+  //   }
+  // }
 
   // Actual Implementations of sending an email based on cliets needs
 
@@ -1434,22 +1650,22 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
 
 //**------------------------------------------------------------------- */
 
-  //sending sms notification based on expiry of bus after every 1 minute for testing purposes.
+  //sending sms notification based on age of bus after every 1 minute for testing purposes.
 
-  Future<void> sendSmsReminder(String phoneNumber, String busName, int age,
-      String serviceInterval) async {
-    final String message =
-        'Dear Admin, Bus $busName has an age of $age Years. Please ensure that the bus undergoes service after every $serviceInterval. Thank you. \nAlgoa Bus Inc';
-    Timer.periodic(Duration(minutes: 1), (timer) async {
-      try {
-        final result = await twilioFlutter.sendSMS(
-            toNumber: phoneNumber, messageBody: message);
-        print('SMS sent: $result');
-      } catch (e) {
-        print('Error sending SMS: $e');
-      }
-    });
-  }
+  // Future<void> sendSmsReminder(String phoneNumber, String busName, int age,
+  //     String serviceInterval) async {
+  //   final String message =
+  //       'Dear Admin, Bus $busName has an age of $age Years. Please ensure that the bus undergoes service after every $serviceInterval. Thank you. \nAlgoa Bus Inc';
+  //   Timer.periodic(Duration(minutes: 1), (timer) async {
+  //     try {
+  //       final result = await twilioFlutter.sendSMS(
+  //           toNumber: phoneNumber, messageBody: message);
+  //       print('SMS sent: $result');
+  //     } catch (e) {
+  //       print('Error sending SMS: $e');
+  //     }
+  //   });
+  // }
 
   //Deployment code for sending message after evry 5 years regarding the age of the bus
 
@@ -1488,12 +1704,12 @@ class _BusDetailsPageState extends State<BusDetailsPage> {
           'subject': 'Bus System Notification',
         }
       ],
-      'from': {'email': 'soloowfestus@gmail.com'},
+      'from': {'email': 'algoabusessa@gmail.com'},
       'content': [
         {
           'type': 'text/html',
           'value':
-              '<p>Dear <strong>Admin,</strong><br> Bus $busName of licence disk number $licenceDisk. has an age of <strong>$age</strong> years. Please ensure that it undergoes service after every $serviceIntervalInKm KM. Thank you.<br> Algoa Buses Inc</p>'
+              '<p>Dear <strong>Admin,</strong><br> Bus $busName of licence disk number $licenceDisk. has an age of <strong>$age</strong> years. Please ensure that it undergoes service after every $serviceIntervalInKm. Thank you.<br> Algoa Buses Inc</p>'
         }
       ],
     };

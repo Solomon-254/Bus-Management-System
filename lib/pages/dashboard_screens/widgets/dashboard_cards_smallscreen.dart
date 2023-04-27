@@ -23,34 +23,31 @@ class InfoCardSmall extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: InkWell(
-        onTap: () {},
-        child: Container(
-            padding: EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                  color: isActive ? iconsColor : bgAccentColor, width: .5),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                CustomText(
-                  text: title,
-                  size: 24,
-                  weight: FontWeight.w300,
-                  color: isActive ? iconsColor : Colors.green,
-                ),
-                CustomText(
-                  text: value,
-                  size: 24,
-                  weight: FontWeight.bold,
-                  color: isActive ? iconsColor : Colors.blue,
-                ),
-              ],
-            )),
-      ),
+      child: Container(
+          padding: EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+                color: isActive ? iconsColor : bgAccentColor, width: .5),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CustomText(
+                text: title,
+                size: 24,
+                weight: FontWeight.w300,
+                color: isActive ? iconsColor : Colors.green,
+              ),
+              CustomText(
+                text: value,
+                size: 24,
+                weight: FontWeight.bold,
+                color: isActive ? iconsColor : Colors.blue,
+              ),
+            ],
+          )),
     );
   }
 }

@@ -87,12 +87,15 @@ class UserDatabaseService {
       throw Exception("Data does not exists");
     } else {
       return UsersUserData(
-        uid: docId,
-        fullName: data['fullName'],
-        emailAddress: data['emailAddress'],
-        phoneNumber: data['phoneNumber'],
-        role: data['role'],
-      );
+          uid: docId,
+          fullName: data['fullName'] ?? '',
+          emailAddress: data['emailAddress'] ?? '',
+          phoneNumber: data['phoneNumber'] ?? '',
+          role: data['role'] ?? '',
+          licenceExpiry:
+              // ignore: prefer_null_aware_operators
+              data['licenceExpiryDate'] != null ? data['licenceExpiryDate'].toDate() : null,
+          );
     }
   }
 
@@ -108,12 +111,14 @@ class UserDatabaseService {
       String fullName,
       String emailAddress,
       String phoneNumber, //Updating data based on a given docId
-      String role) async {
+      String role,
+      DateTime licenceExpiryDate) async {
     return await usersCollection.doc(uid).update({
       'fullName': fullName,
       'emailAddress': emailAddress,
       'phoneNumber': phoneNumber,
-      'role': role
+      'role': role,
+      'licenceExpiryDate': licenceExpiryDate
     });
   }
 
